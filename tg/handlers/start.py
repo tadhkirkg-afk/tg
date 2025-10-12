@@ -147,7 +147,7 @@ async def im_siser(call: CallbackQuery):
     user.username = call.from_user.username
     user.first_name = call.from_user.first_name
     user.last_name = call.from_user.last_name
-    user.gender = "Female"
+    user.gender = "F"
     user.save()
     await call.message.delete()
     builder = InlineKeyboardBuilder()
