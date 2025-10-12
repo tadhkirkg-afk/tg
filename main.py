@@ -13,8 +13,13 @@ async def main():
     from aiogram.fsm.storage.memory import MemoryStorage
     from aiogram import Bot, Dispatcher
     from tg.handlers import start
+    from dotenv import load_dotenv
 
-    bot = Bot("7955479087:AAGZkAJoP2nwMf7TPqq5F3AA5Nq5M_BSy9s")
+    load_dotenv()  # загружает переменные из .env
+
+    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    bot = Bot(BOT_TOKEN)
+
     dp = Dispatcher(storage=MemoryStorage())
 
     dp.include_routers(start.router)
