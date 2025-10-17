@@ -100,6 +100,18 @@ async def brothers(msg: Message, bot: Bot):
     await msg.answer(f"{count}")
     await msg.answer(text)
 
+@router.message(Command("sisters"))
+async def sisters(msg: Message, bot: Bot):
+    sisters = await sync_to_async(TelegramUser.objects.filter)(gender="F")
+    text = ""
+    count = 0
+    if sisters:
+        for sister in sisters:
+            text += f"{sister.first_name} {sister.last_name}\n"
+            count += 1
+        await msg.answer(f"{count}")
+        await msg.answer(text)
+
 @router.chat_join_request()
 async def chat_join_request(event: ChatJoinRequest):
     user_id = event.from_user.id
@@ -157,6 +169,30 @@ async def im_siser(call: CallbackQuery):
 class PostState(StatesGroup):
     awaiting_text = State()
 
+class SendToSistersState(StatesGroup):
+    awaiting_text = State()
+
+@router.message(Command("send_sisters"))
+async def sisters(msg: Message, state: FSMContext, bot: Bot):
+    await msg.answer("Ваш текст:")
+    await state.set_state(SendToSistersState.awaiting_text)
+
+@router.message(SendToSistersState.awaiting_text)
+async def send_to_sisters(msg: Message, bot: Bot, state: FSMContext):
+    sisters = await sync_to_async(TelegramUser.objects.filter)(gender="F")
+    good = 0
+    fault = 0
+    for sister in sisters:
+        try:
+            await bot.send_message(chat_id=sister.user_id, text=msg.text)
+            good += 1
+        except Exception as e:
+            fault += 1
+            print(e)
+    await msg.answer(f"Отправлено {good} сёстрам\nОшибка при отправлении {fault} сёстрам")
+    await state.clear()
+
+
 @router.message(Command("post"))
 async def new_post(msg: Message, state: FSMContext):
     # user = await sync_to_async(TelegramUser.objects.get)(user_id=msg.from_user.id)
@@ -171,9 +207,10 @@ async def post_awaiting_text(msg: Message, state: FSMContext, bot: Bot):
         builder = InlineKeyboardBuilder()
         builder.add(InlineKeyboardButton(text="☀️ 𝗔𝗡-𝗡𝗨𝗥 🌙 [хᴀдиᴄы, ᴀяᴛы]", url="https://t.me/+f9fH25BXvLYwMDFi"))
         copy = await bot.copy_message(chat_id=user_id, from_chat_id=msg.chat.id, message_id=msg.message_id, reply_markup=builder.as_markup())
-        # await bot.send_message(
-        #     chat_id=user_id,
-        #     text=msg.text)
+        await bot.send_message(
+            chat_id=user_id,
+            text=msg.text)
+        await state.clear()
     except Exception as e:
         print(e)
 
