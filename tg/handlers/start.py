@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from aiogram import Router, F, Bot
@@ -34,10 +35,10 @@ async def start_command(msg: Message, command: CommandObject, bot: Bot):
         await bot.send_message(chat_id=user.user_id,text=text,reply_to_message_id=forwarded.message_id, parse_mode="Markdown")
         builder = InlineKeyboardBuilder()
         if user.gender == "M":
-            builder.add(InlineKeyboardButton(text="📝 Записаться на уведомление", callback_data="awaiting_brother"))
+            builder.add(InlineKeyboardButton(text="📝 Записаться", url="https://t.me/Ibrahim_5663"))
             await msg.answer(brother_text, parse_mode="Markdown", reply_markup=builder.as_markup())
         elif user.gender == "F":
-            builder.add(InlineKeyboardButton(text="Записаться", url="https://t.me/aysha_5663"))
+            builder.add(InlineKeyboardButton(text="📝 Записаться", url="https://t.me/aysha_5663"))
             await msg.answer(sister_text, parse_mode="Markdown", reply_markup=builder.as_markup())
         else:
             text2 = (
@@ -56,10 +57,10 @@ async def start_command(msg: Message, command: CommandObject, bot: Bot):
     else:
         builder = InlineKeyboardBuilder()
         if user.gender == "M":
-            builder.add(InlineKeyboardButton(text="📝 Записаться на уведомление", callback_data="awaiting_brother"))
+            builder.add(InlineKeyboardButton(text="📝 Записаться", url="https://t.me/Ibrahim_5663"))
             await msg.answer(brother_text, parse_mode="Markdown", reply_markup=builder.as_markup())
         elif user.gender == "F":
-            builder.add(InlineKeyboardButton(text="Записаться", url="https://t.me/aysha_5663"))
+            builder.add(InlineKeyboardButton(text="📝 Записаться", url="https://t.me/aysha_5663"))
             await msg.answer(sister_text, parse_mode="Markdown", reply_markup=builder.as_markup())
         else:
             text2 = (
@@ -150,7 +151,7 @@ async def im_brother(call: CallbackQuery):
     user.gender = "M"
     await sync_to_async(user.save)()
     builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(text="📝 Записаться на уведомление", callback_data="awaiting_brother"))
+    builder.add(InlineKeyboardButton(text="📝 Записаться", url="https://t.me/Ibrahim_5663"))
     await call.message.answer(brother_text, parse_mode="Markdown", reply_markup=builder.as_markup())
 
 @router.callback_query(F.data == "im_sister")
@@ -169,6 +170,9 @@ async def im_siser(call: CallbackQuery):
 class PostState(StatesGroup):
     awaiting_text = State()
 
+class SendToBrothersState(StatesGroup):
+    awaiting_text = State()
+
 class SendToSistersState(StatesGroup):
     awaiting_text = State()
 
@@ -176,6 +180,11 @@ class SendToSistersState(StatesGroup):
 async def sisters(msg: Message, state: FSMContext, bot: Bot):
     await msg.answer("Ваш текст:")
     await state.set_state(SendToSistersState.awaiting_text)
+
+@router.message(Command("send_brother"))
+async def brother(msg: Message, state: FSMContext, bot: Bot):
+    await msg.answer("Ваш текст:")
+    await state.set_state(SendToBrothersState.awaiting_text)
 
 @router.message(SendToSistersState.awaiting_text)
 async def send_to_sisters(msg: Message, bot: Bot, state: FSMContext):
@@ -214,6 +223,20 @@ async def post_awaiting_text(msg: Message, state: FSMContext, bot: Bot):
     except Exception as e:
         print(e)
 
+@router.message(SendToBrothersState.awaiting_text)
+async def post_brother(msg: Message, state: FSMContext, bot: Bot):
+    brothers = await sync_to_async(Wait.objects.all)()
+    good = 0
+    fault = 0
+    for brother in brothers:
+        try:
+            await bot.send_message(chat_id=brother.user.user_id, text=msg.text)
+            good += 1
+        except Exception as e:
+            fault += 1
+        await asyncio.sleep(1)
+    await msg.answer(f"Отправлено {good} братьям\nОшибка при отправлении {fault} братьям")
+    await state.clear()
 
 # @router.chat_member(ChatMemberUpdatedFilter(member_status_changed=IS_MEMBER))
 # async def on_user_subscribe(event: ChatMemberUpdated, bot: Bot, state: FSMContext):
